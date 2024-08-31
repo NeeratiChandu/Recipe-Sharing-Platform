@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import CategoryFilter from './CategoryFilter';
+import Rating from './Rating';
 
 function App() {
   const [recipes, setRecipes] = useState([]);
-  const [newRecipe, setNewRecipe] = useState({ title: '', ingredients: [], instructions: [], category: '' });
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [token, setToken] = useState('');
 
   useEffect(() => {
     axios.get('http://localhost:3000/recipes')
@@ -15,32 +19,64 @@ function App() {
       });
   }, []);
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    axios.post('http://localhost:3000/recipes', newRecipe)
+  const handleCreateRecipe = (recipe) => {
+    axios.post('http://localhost:3000/recipes', recipe)
       .then(response => {
         setRecipes([...recipes, response.data]);
-        setNewRecipe({ title: '', ingredients: [], instructions: [], category: '' });
       })
       .catch(error => {
         console.error(error);
       });
   };
 
-  const handleEdit = (id) => {
-    axios.get(`http://localhost:3000/recipes/${id}`)
+  const handleEditRecipe = (recipe) => {
+    axios.put(`http://localhost:3000/recipes/${recipe._id}`, recipe)
       .then(response => {
-        setNewRecipe(response.data);
+        setRecipes(recipes.map(r => r._id === recipe._id ? response.data : r));
       })
       .catch(error => {
         console.error(error);
       });
   };
 
-  const handleDelete = (id) => {
-    axios.delete(`http://localhost:3000/recipes/${id}`)
+  const handleDeleteRecipe = (recipeId) => {
+    axios.delete(`http://localhost:3000/recipes/${recipeId}`)
       .then(() => {
-        setRecipes(recipes.filter(recipe => recipe._id !== id));
+        setRecipes(recipes.filter(r => r._id !== recipeId));
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  };
+
+  const handleRatingChange = (rating) => {
+    setRating(rating);
+  };
+
+  const handleRatingSubmit = () => {
+    axios.post('http://localhost:3000/ratings', { rating, recipeId: selectedRecipe._id })
+      .then(response => {
+        console.log(response.data);
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  };
+
+  const handleLogin = (username, password) => {
+    axios.post('http://localhost:3000/login', { username, password })
+      .then(response => {
+        setToken(response.data.token);
+      })
+      .catch(error => {
+        console.error(error);
+      });
+  };
+
+  const handleRegister = (username, password) => {
+    axios.post('http://localhost:3000/register', { username, password })
+      .then(response => {
+        console.log(response.data);
       })
       .catch(error => {
         console.error(error);
@@ -50,37 +86,20 @@ function App() {
   return (
     <div>
       <h1>Recipe Sharing Platform</h1>
-      <form onSubmit={handleSubmit}>
-        <label>
-          Title:
-          <input type="text" value={newRecipe.title} onChange={(event) => setNewRecipe({ ...newRecipe, title: event.target.value })} />
-        </label>
-        <label>
-          Ingredients:
-          <textarea value={newRecipe.ingredients.join('\n')} onChange={(event) => setNewRecipe({ ...newRecipe, ingredients: event.target.value.split('\n') })} />
-        </label>
-        <label>
-          Instructions:
-          <textarea value={newRecipe.instructions.join('\n')} onChange={(event) => setNewRecipe({ ...newRecipe, instructions: event.target.value.split('\n') })} />
-        </label>
-        <label>
-          Category:
-          <input type="text" value={newRecipe.category} onChange={(event) => setNewRecipe({ ...newRecipe, category: event.target.value })} />
-        </label>
-        <button type="submit">Create Recipe</button>
-      </form>
-      <ul>
-        {recipes.map((recipe) => (
-          <li key={recipe._id}>
-            <h2>{recipe.title}</h2>
-            <p>Ingredients: {recipe.ingredients.join(', ')}</p>
-            <p>Instructions: {recipe.instructions.join(', ')}</p>
-            <p>Category: {recipe.category}</p>
-            <button onClick={() => handleEdit(recipe._id)}>Edit</button>
-            <button onClick={() => handleDelete(recipe._id)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      <CategoryFilter recipes={recipes} />
+      {selectedRecipe && (
+        <div>
+          <h2>{selectedRecipe.title}</h2>
+          <p>Ingredients: {selectedRecipe.ingredients.join(', ')}</p>
+          <p>Instructions: {selectedRecipe.instructions.join(', ')}</p>
+          <Rating rating={rating} onChange={handleRatingChange} onSubmit={handleRatingSubmit} />
+        </div>
+      )}
+      <button onClick={() => handleCreateRecipe({ title: 'New Recipe', ingredients: [], instructions: [] })}>
+        Create Recipe
+      </button>
+      <button onClick={() => handleLogin('username', 'password')}>Login</button>
+      <button onClick={() => handleRegister('username', 'password')}>Register</button>
     </div>
   );
 }
