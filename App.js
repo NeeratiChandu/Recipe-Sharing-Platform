@@ -8,6 +8,8 @@ function App() {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [rating, setRating] = useState(0);
   const [token, setToken] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
 
   useEffect(() => {
     axios.get('http://localhost:3000/recipes')
@@ -67,6 +69,8 @@ function App() {
     axios.post('http://localhost:3000/login', { username, password })
       .then(response => {
         setToken(response.data.token);
+        setUsername(username);
+        setPassword(password);
       })
       .catch(error => {
         console.error(error);
@@ -98,10 +102,24 @@ function App() {
       <button onClick={() => handleCreateRecipe({ title: 'New Recipe', ingredients: [], instructions: [] })}>
         Create Recipe
       </button>
+      <RecipeForm onCreateRecipe={handleCreateRecipe} />
       <button onClick={() => handleLogin('username', 'password')}>Login</button>
       <button onClick={() => handleRegister('username', 'password')}>Register</button>
     </div>
   );
 }
+
+{username && (
+  <div>
+    <h2>Welcome, {username}!</h2>
+    <button onClick={() => handleLogout()}>Logout</button>
+  </div>
+)}
+{!username && (
+  <div>
+    <Login onLogin={handleLogin} />
+    <Register onRegister={handleRegister} />
+  </div>
+)}
 
 export default App;
